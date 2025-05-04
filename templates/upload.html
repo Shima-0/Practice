@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Analyzer</title>
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #2c3e50;
+            --primary: #3498db;
+            --secondary: #f8f9fa;
+            --border: #dee2e6;
+        }
+
+        body.dark-theme {
+            --bg: #121212;
+            --text: #e0e0e0;
+            --secondary: #2d2d2d;
+            --border: #404040;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--secondary);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        .theme-switch {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            cursor: pointer;
+            font-size: 24px;
+        }
+
+        .upload-section {
+            border: 2px dashed var(--primary);
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            border-radius: 10px;
+        }
+
+        .custom-file-upload {
+            background: var(--primary);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: inline-block;
+            margin: 10px;
+            border: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            border: 1px solid var(--border);
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        video {
+            width: 100%;
+            max-width: 800px;
+            margin: 20px 0;
+            border-radius: 10px;
+        }
+
+        .stats-box {
+            background: var(--bg);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="theme-switch" onclick="toggleTheme()">🌓</div>
+    <div class="container">
+        <h1>Video Analysis Platform</h1>
+        
+        <div class="upload-section">
+            <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+                <label class="custom-file-upload">
+                    📁 Choose Video
+                    <input type="file" name="video" accept="video/mp4" hidden>
+                </label>
+                <button type="submit" class="custom-file-upload">🚀 Process Video</button>
+            </form>
+        </div>
+		
+		<div id="preview">
+			{% if history %}
+			<h3>Latest Processed Video:</h3>
+			<video controls>
+				<source src="{{ url_for('static', filename='processed/' + history[0].processed_filename) }}">
+			</video>
+			{% endif %}
+		</div>
+
+        {% if history %}
+        <div class="stats-box">
+            <h2>Processing History</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Filename</th>
+                        <th>Objects Detected</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in history %}
+                    <tr>
+                        <td>{{ record.upload_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>{{ record.filename }}</td>
+                       <td>
+							{% for obj, count in record.parsed_stats.object_counts.items() %}
+							{{ obj }}: {{ count }}<br>
+							{% endfor %}
+						</td>
+                        <td>
+                            <button class="custom-file-upload" 
+                                    onclick="location.href='/report/{{ record.id }}/pdf'">
+                                📄 PDF
+                            </button>
+                            <button class="custom-file-upload"
+                                    onclick="location.href='/report/{{ record.id }}/xlsx'">
+                                📊 Excel
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        {% if error %}
+        <div class="error" style="color: red; margin-top: 20px;">
+            {{ error }}
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        function toggleTheme() {
+            document.body.classList.toggle('dark-theme');
+            localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
+        }
+
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-theme');
+        }
+
+        document.querySelector('input[type="file"]').addEventListener('change', function(e) {
+            const fileName = e.target.files[0] ? e.target.files[0].name : 'No file selected';
+            alert('Selected file: ' + fileName);
+        });
+    </script>
+</body>
+</html>
